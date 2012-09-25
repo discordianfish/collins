@@ -1,3 +1,5 @@
+require 'cgi'
+
 module Collins; module Api
 
   module Attributes
@@ -14,10 +16,14 @@ module Collins; module Api
     end
     def set_attribute! asset_or_tag, key, value, group_id = nil
       asset = get_asset_or_tag asset_or_tag
-      parameters = {
-        :attribute => "#{key};#{value}",
-        :groupId => group_id
-      }
+      parameters = {:groupId => group_id}
+      key_sym = key.downcase.to_sym
+      case key_sym
+        when :lldp, :lshw
+          parameters[key_sym] = CGI.escape(value)
+        else
+          parameters[:attribute] = "#{key};#{value}"
+      end
       parameters = select_non_empty_parameters parameters
       logger.debug("Setting attribute #{key} to #{value} on #{asset.tag}")
       http_post("/api/asset/#{asset.tag}", parameters, asset.location) do |response|
